@@ -95,9 +95,7 @@ class MyGame extends Forge2DGame with DragCallbacks {
 
   @override
   void onDragEnd(DragEndEvent event) {
-    currentPlayer.body.applyLinearImpulse(
-      -dragging!.direction * dragging!.length * 1000,
-    );
+    currentPlayer.fireBullet(dragging!);
     dragging = null;
     super.onDragEnd(event);
   }
@@ -163,7 +161,57 @@ class Player extends BodyComponent with TapCallbacks {
 
     canvas.drawCircle(
       Offset.zero,
-      3,
+      radius,
+      Paint()..color = color,
+    );
+  }
+
+  void fireBullet(DraggingInfo dragging) async {
+    body.applyLinearImpulse(-dragging.direction * dragging.length * 1000);
+    final angle = atan2(dragging.direction.y, dragging.direction.x);
+    const bulletRadius = 0.5;
+    final bullet = Bullet(
+      position: position +
+          (Vector2(cos(angle), sin(angle)) * (radius + bulletRadius)),
+      radius: bulletRadius,
+      color: color,
+    );
+    await world.add(bullet);
+    bullet.body.applyLinearImpulse(dragging.direction * dragging.length * 100000);
+  }
+}
+
+class Bullet extends BodyComponent with TapCallbacks {
+  Bullet({
+    required Vector2 position,
+    required this.radius,
+    required this.color,
+  }) : super(
+          fixtureDefs: [
+            FixtureDef(
+              CircleShape()..radius = radius,
+              restitution: 0.8,
+              density: 1.0,
+              friction: 0.5,
+            ),
+          ],
+          bodyDef: BodyDef(
+            angularDamping: 0.8,
+            position: position,
+            type: BodyType.dynamic,
+            bullet: true,
+          ),
+        );
+
+  final double radius;
+  final Color color;
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    canvas.drawCircle(
+      Offset.zero,
+      radius,
       Paint()..color = color,
     );
   }
