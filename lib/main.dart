@@ -1,7 +1,8 @@
-import 'dart:math';
+import 'dart:math' hide Rectangle;
 
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
+import 'package:flame/experimental.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
@@ -74,7 +75,7 @@ class MyGame extends Forge2DGame with DragCallbacks {
       Wall(bottomLeft, bottomRight),
       Wall(topLeft, bottomLeft),
     ]);
-    camera.follow(currentPlayer);
+    camera.follow(currentPlayer, maxSpeed: 100, snap: true);
     super.onLoad();
   }
 
