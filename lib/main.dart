@@ -6,6 +6,7 @@ import 'package:flame/events.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
 import 'package:flame/particles.dart';
+import 'package:flame_audio/flame_audio.dart';
 import 'package:flame_forge2d/flame_forge2d.dart' hide Particle;
 import 'package:flame_noise/flame_noise.dart';
 import 'package:flutter/material.dart';
@@ -44,6 +45,9 @@ class MyGame extends Forge2DGame with DragCallbacks {
 
   @override
   Future<void> onLoad() async {
+    await FlameAudio.audioCache.load('explosion.wav');
+    FlameAudio.bgm.initialize();
+    FlameAudio.bgm.play('bg.mp3');
     final tl = gameRect.topLeft.toVector2();
     final tr = gameRect.topRight.toVector2();
     final br = gameRect.bottomRight.toVector2();
@@ -173,6 +177,7 @@ class Player extends BodyComponent {
   }
 
   void kill() {
+    FlameAudio.play('explosion.wav');
     removeFromParent();
     Vector2 randomVector2() =>
         (Vector2.random(Random()) - Vector2.random(Random())) * 99;

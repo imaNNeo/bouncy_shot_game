@@ -7,6 +7,7 @@ environment:
   sdk: '>=3.1.4 <4.0.0'
 dependencies:
   flame: ^1.10.0
+  flame_audio: ^2.1.2
   flame_forge2d: ^0.15.1
   flame_noise: ^0.1.1+7
   flutter:
@@ -18,3 +19,5 @@ dev_dependencies:
     sdk: flutter
 flutter:
   uses-material-design: true
+  assets:
+    - assets/audio/
