@@ -1,14 +1,18 @@
 import 'dart:math' hide Rectangle;
 
 import 'package:flame/components.dart';
+import 'package:flame/effects.dart';
 import 'package:flame/events.dart';
-import 'package:flame/experimental.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
-import 'package:flame_forge2d/flame_forge2d.dart';
+import 'package:flame/particles.dart';
+import 'package:flame_forge2d/flame_forge2d.dart' hide Particle;
+import 'package:flame_noise/flame_noise.dart';
 import 'package:flutter/material.dart';
 
 void main() => runApp(GameWidget(game: MyGame()));
+
+final rnd = Random();
 
 class DraggingInfo {
   Vector2 startPosition;
@@ -75,13 +79,8 @@ class MyGame extends Forge2DGame with DragCallbacks {
       Wall(bottomLeft, bottomRight),
       Wall(topLeft, bottomLeft),
     ]);
-    camera.follow(currentPlayer, maxSpeed: 100, snap: true);
-    camera.setBounds(
-      Rectangle.fromCenter(
-        center: gameRect.center.toVector2(),
-        size: Vector2.all(30),
-      ),
-    );
+    camera.viewport.position = gameRect.center.toVector2();
+    camera.viewport.anchor = Anchor.center;
     super.onLoad();
   }
 
@@ -190,7 +189,40 @@ class Player extends BodyComponent {
     await world.add(bullet);
   }
 
-  void kill() => removeFromParent();
+  void kill() {
+    removeFromParent();
+    Vector2 randomVector2() => (Vector2.random(rnd) - Vector2.random(rnd)) * 99;
+    world.add(
+      ParticleSystemComponent(
+        position: position,
+        particle: Particle.generate(
+          count: 40,
+          lifespan: 0.8,
+          generator: (i) {
+            return AcceleratedParticle(
+              speed: randomVector2(),
+              acceleration: randomVector2(),
+              child: ComputedParticle(
+                renderer: (canvas, particle) {
+                  canvas.drawCircle(
+                    Offset.zero,
+                    (radius / 2) * (1 - particle.progress),
+                    Paint()..color = color.withOpacity(1 - particle.progress),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ),
+    );
+    game.camera.viewfinder.add(
+      MoveEffect.by(
+        Vector2(4, 4),
+        PerlinNoiseEffectController(duration: 0.4, frequency: 400),
+      ),
+    );
+  }
 }
 
 class Bullet extends BodyComponent with ContactCallbacks {

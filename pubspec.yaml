@@ -8,6 +8,7 @@ environment:
 dependencies:
   flame: ^1.10.0
   flame_forge2d: ^0.15.1
+  flame_noise: ^0.1.1+7
   flutter:
     sdk: flutter
 
