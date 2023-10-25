@@ -2,7 +2,6 @@ import 'dart:math' hide Rectangle;
 
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
-import 'package:flame/experimental.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
@@ -179,15 +178,22 @@ class Wall extends BodyComponent {
   @override
   Body createBody() {
     final shape = EdgeShape()..set(_start, _end);
-    final fixtureDef = FixtureDef(
-      shape,
-      friction: 0.3,
-    );
-    final bodyDef = BodyDef(
-      position: Vector2.zero(),
-      type: BodyType.static,
-    );
-
+    final fixtureDef = FixtureDef(shape);
+    final bodyDef = BodyDef(type: BodyType.static);
     return world.createBody(bodyDef)..createFixture(fixtureDef);
+  }
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    canvas.drawLine(
+      _start.toOffset(),
+      _end.toOffset(),
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.5
+        ..strokeCap = StrokeCap.square,
+    );
   }
 }
