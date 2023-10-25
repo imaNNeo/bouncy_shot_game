@@ -8,9 +8,7 @@ import 'package:flame/game.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(GameWidget(game: MyGame()));
-}
+void main() => runApp(GameWidget(game: MyGame()));
 
 class DraggingInfo {
   Vector2 startPosition;
@@ -40,31 +38,32 @@ class MyGame extends Forge2DGame with DragCallbacks {
     Colors.pinkAccent,
     Colors.pink,
   ];
-
   static const playerKey = 'playerKey';
   DraggingInfo? dragging;
-
   late Player currentPlayer;
   late List<Player> bots;
 
   Rect get gameRect => const Rect.fromLTWH(0, 0, 100, 100);
 
   @override
-  void onLoad() async {
-    currentPlayer = Player(
-      key: ComponentKey.named(playerKey),
-      initialPosition: gameRect.center.toVector2(),
-      color: Colors.white,
-    );
-    world.addAll(bots = List.generate(
-      10,
-      (index) => Player(
-        key: ComponentKey.named('player_$index'),
-        initialPosition: gameRect.deflate(10).randomPoint(),
-        color: availableColors.random(),
+  Future<void> onLoad() async {
+    await world.addAll(
+      bots = List.generate(
+        10,
+        (index) => Player(
+          key: ComponentKey.named('player_$index'),
+          initialPosition: gameRect.deflate(10).randomPoint(),
+          color: availableColors.random(),
+        ),
       ),
-    ));
-    await world.add(currentPlayer);
+    );
+    await world.add(
+      currentPlayer = Player(
+        key: ComponentKey.named(playerKey),
+        initialPosition: gameRect.center.toVector2(),
+        color: Colors.white,
+      ),
+    );
     await world.add(AimLine());
     final topLeft = gameRect.topLeft.toVector2();
     final topRight = gameRect.topRight.toVector2();
@@ -77,16 +76,18 @@ class MyGame extends Forge2DGame with DragCallbacks {
       Wall(topLeft, bottomLeft),
     ]);
     camera.follow(currentPlayer, maxSpeed: 100, snap: true);
-    camera.setBounds(Rectangle.fromCenter(center: gameRect.center.toVector2(), size: Vector2.all(30)));
+    camera.setBounds(
+      Rectangle.fromCenter(
+        center: gameRect.center.toVector2(),
+        size: Vector2.all(30),
+      ),
+    );
     super.onLoad();
   }
 
   @override
   void onDragStart(DragStartEvent event) {
-    dragging = DraggingInfo(
-      event.localPosition,
-      event.localPosition,
-    );
+    dragging = DraggingInfo(event.localPosition, event.localPosition);
     super.onDragStart(event);
   }
 
@@ -102,7 +103,6 @@ class MyGame extends Forge2DGame with DragCallbacks {
       currentPlayer.fireBullet(dragging!);
     }
     dragging = null;
-
     super.onDragEnd(event);
   }
 
@@ -117,17 +117,15 @@ class AimLine extends PositionComponent with HasGameRef<MyGame> {
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    const maxLength = 10.0;
     final dragging = game.dragging;
     if (dragging != null && !dragging.isNan) {
       final direction = dragging.direction;
       final angle = -atan2(direction.x, direction.y) + pi / 2;
       final length = dragging.length / 10;
-
       final ballOffset = game.currentPlayer.position.toOffset();
       canvas.drawLine(
         ballOffset,
-        ballOffset + Offset(cos(angle), sin(angle)) * min(length, maxLength),
+        ballOffset + Offset(cos(angle), sin(angle)) * min(length, 10.0),
         Paint()
           ..color = Colors.lightGreenAccent
           ..strokeWidth = 0.2,
@@ -150,23 +148,25 @@ class Player extends BodyComponent {
   final Color color;
 
   @override
-  Body createBody() => world.createBody(BodyDef(
-        angularDamping: 0.8,
-        position: initialPosition,
-        type: BodyType.dynamic,
-      ))
-        ..createFixture(FixtureDef(
-          CircleShape()..radius = radius,
-          restitution: 0.8,
-          density: 10.0,
-          friction: 0.5,
-          userData: this,
-        ));
+  Body createBody() => world.createBody(
+        BodyDef(
+          angularDamping: 0.8,
+          position: initialPosition,
+          type: BodyType.dynamic,
+        ),
+      )..createFixture(
+          FixtureDef(
+            CircleShape()..radius = radius,
+            restitution: 0.8,
+            density: 10.0,
+            friction: 0.5,
+            userData: this,
+          ),
+        );
 
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-
     canvas.drawCircle(
       Offset.zero,
       radius,
@@ -174,7 +174,7 @@ class Player extends BodyComponent {
     );
   }
 
-  void fireBullet(DraggingInfo dragging) async {
+  Future<void> fireBullet(DraggingInfo dragging) async {
     body.applyLinearImpulse(-dragging.direction * dragging.length * 1000);
     final angle = atan2(dragging.direction.y, dragging.direction.x);
     const bulletRadius = 0.5;
@@ -190,9 +190,7 @@ class Player extends BodyComponent {
     await world.add(bullet);
   }
 
-  void kill() {
-    removeFromParent();
-  }
+  void kill() => removeFromParent();
 }
 
 class Bullet extends BodyComponent with ContactCallbacks {
@@ -209,20 +207,23 @@ class Bullet extends BodyComponent with ContactCallbacks {
   final Vector2 initialLinearImpulse;
 
   @override
-  Body createBody() => world.createBody(BodyDef(
-        angularDamping: 0.8,
-        position: initialPosition,
-        type: BodyType.dynamic,
-        bullet: true,
-        userData: this,
-      ))
-        ..createFixture(FixtureDef(
-          CircleShape()..radius = radius,
-          restitution: 0.8,
-          density: 1.0,
-          friction: 0.5,
+  Body createBody() => world.createBody(
+        BodyDef(
+          angularDamping: 0.8,
+          position: initialPosition,
+          type: BodyType.dynamic,
+          bullet: true,
           userData: this,
-        ));
+        ),
+      )..createFixture(
+          FixtureDef(
+            CircleShape()..radius = radius,
+            restitution: 0.8,
+            density: 1.0,
+            friction: 0.5,
+            userData: this,
+          ),
+        );
 
   @override
   Future<void> onLoad() async {
@@ -236,11 +237,7 @@ class Bullet extends BodyComponent with ContactCallbacks {
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    canvas.drawCircle(
-      Offset.zero,
-      radius,
-      Paint()..color = color,
-    );
+    canvas.drawCircle(Offset.zero, radius, Paint()..color = color);
   }
 
   @override
@@ -256,9 +253,7 @@ class Bullet extends BodyComponent with ContactCallbacks {
     }
   }
 
-  void explode() {
-    removeFromParent();
-  }
+  void explode() => removeFromParent();
 }
 
 class Wall extends BodyComponent {
@@ -268,12 +263,8 @@ class Wall extends BodyComponent {
   Wall(this._start, this._end);
 
   @override
-  Body createBody() {
-    final shape = EdgeShape()..set(_start, _end);
-    final fixtureDef = FixtureDef(shape);
-    final bodyDef = BodyDef(type: BodyType.static, userData: this);
-    return world.createBody(bodyDef)..createFixture(fixtureDef);
-  }
+  Body createBody() => world.createBody(BodyDef(userData: this))
+    ..createFixture(FixtureDef(EdgeShape()..set(_start, _end)));
 
   @override
   void render(Canvas canvas) {
