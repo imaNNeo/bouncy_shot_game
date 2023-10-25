@@ -52,7 +52,7 @@ class MyGame extends Forge2DGame with DragCallbacks {
   @override
   Future<void> onLoad() async {
     FlameAudio.bgm.initialize();
-    // FlameAudio.bgm.play('bg.mp3');
+    FlameAudio.bgm.play('bg.mp3');
     final tl = gameRect.topLeft.toVector2();
     final tr = gameRect.topRight.toVector2();
     final br = gameRect.bottomRight.toVector2();
