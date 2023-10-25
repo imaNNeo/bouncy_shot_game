@@ -12,8 +12,6 @@ import 'package:flutter/material.dart';
 
 void main() => runApp(GameWidget(game: MyGame()));
 
-final rnd = Random();
-
 class DraggingInfo {
   Vector2 startPosition;
   Vector2 currentPosition;
@@ -31,53 +29,41 @@ class MyGame extends Forge2DGame with DragCallbacks {
   MyGame() : super(gravity: Vector2.zero());
   static const availableColors = [
     Colors.red,
-    Colors.greenAccent,
-    Colors.lightGreenAccent,
+    Colors.green,
     Colors.blueAccent,
-    Colors.lightBlueAccent,
     Colors.purple,
     Colors.cyanAccent,
     Colors.deepPurpleAccent,
     Colors.orangeAccent,
-    Colors.pinkAccent,
     Colors.pink,
   ];
-  static const playerKey = 'playerKey';
   DraggingInfo? dragging;
   late Player currentPlayer;
-  late List<Player> bots;
 
   Rect get gameRect => const Rect.fromLTWH(0, 0, 100, 100);
 
   @override
   Future<void> onLoad() async {
-    await world.addAll(
-      bots = List.generate(
+    final tl = gameRect.topLeft.toVector2();
+    final tr = gameRect.topRight.toVector2();
+    final br = gameRect.bottomRight.toVector2();
+    final bl = gameRect.bottomLeft.toVector2();
+    await world.addAll([
+      ...List.generate(
         10,
         (index) => Player(
           key: ComponentKey.named('player_$index'),
-          initialPosition: gameRect.deflate(10).randomPoint(),
+          initPos: gameRect.deflate(10).randomPoint(),
           color: availableColors.random(),
         ),
       ),
-    );
-    await world.add(
       currentPlayer = Player(
-        key: ComponentKey.named(playerKey),
-        initialPosition: gameRect.center.toVector2(),
+        key: ComponentKey.named('mainPlayerKey'),
+        initPos: gameRect.center.toVector2(),
         color: Colors.white,
       ),
-    );
-    await world.add(AimLine());
-    final topLeft = gameRect.topLeft.toVector2();
-    final topRight = gameRect.topRight.toVector2();
-    final bottomRight = gameRect.bottomRight.toVector2();
-    final bottomLeft = gameRect.bottomLeft.toVector2();
-    await world.addAll([
-      Wall(topLeft, topRight),
-      Wall(topRight, bottomRight),
-      Wall(bottomLeft, bottomRight),
-      Wall(topLeft, bottomLeft),
+      ...[Wall(tl, tr), Wall(tr, br), Wall(bl, br), Wall(tl, bl)],
+      AimLine(),
     ]);
     camera.viewport.position = gameRect.center.toVector2();
     camera.viewport.anchor = Anchor.center;
@@ -135,27 +121,27 @@ class AimLine extends PositionComponent with HasGameRef<MyGame> {
 
 class Player extends BodyComponent {
   Player({
-    required this.initialPosition,
+    required this.initPos,
     required this.color,
     required this.key,
-    this.radius = 3,
+    this.r = 3,
   }) : super(key: key);
 
   final ComponentKey key;
-  final Vector2 initialPosition;
-  final double radius;
+  final Vector2 initPos;
+  final double r;
   final Color color;
 
   @override
   Body createBody() => world.createBody(
         BodyDef(
           angularDamping: 0.8,
-          position: initialPosition,
+          position: initPos,
           type: BodyType.dynamic,
         ),
       )..createFixture(
           FixtureDef(
-            CircleShape()..radius = radius,
+            CircleShape()..radius = r,
             restitution: 0.8,
             density: 10.0,
             friction: 0.5,
@@ -166,53 +152,47 @@ class Player extends BodyComponent {
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    canvas.drawCircle(
-      Offset.zero,
-      radius,
-      Paint()..color = color,
-    );
+    canvas.drawCircle(Offset.zero, r, Paint()..color = color);
   }
 
   Future<void> fireBullet(DraggingInfo dragging) async {
     body.applyLinearImpulse(-dragging.direction * dragging.length * 1000);
-    final angle = atan2(dragging.direction.y, dragging.direction.x);
-    const bulletRadius = 0.5;
+    final ang = atan2(dragging.direction.y, dragging.direction.x);
+    const bulletR = 0.5;
     final speed = dragging.length / 100000;
-    final bullet = Bullet(
-      playerKey: key,
-      initialPosition: position +
-          (Vector2(cos(angle), sin(angle)) * (radius + bulletRadius)),
-      radius: bulletRadius,
-      color: color,
-      initialLinearImpulse: dragging.direction * speed * 100000,
+    await world.add(
+      Bullet(
+        playerKey: key,
+        initialPosition:
+            position + (Vector2(cos(ang), sin(ang)) * (r + bulletR)),
+        radius: bulletR,
+        color: color,
+        initialLinearImpulse: dragging.direction * speed * 100000,
+      ),
     );
-    await world.add(bullet);
   }
 
   void kill() {
     removeFromParent();
-    Vector2 randomVector2() => (Vector2.random(rnd) - Vector2.random(rnd)) * 99;
+    Vector2 randomVector2() =>
+        (Vector2.random(Random()) - Vector2.random(Random())) * 99;
     world.add(
       ParticleSystemComponent(
         position: position,
         particle: Particle.generate(
           count: 40,
           lifespan: 0.8,
-          generator: (i) {
-            return AcceleratedParticle(
-              speed: randomVector2(),
-              acceleration: randomVector2(),
-              child: ComputedParticle(
-                renderer: (canvas, particle) {
-                  canvas.drawCircle(
-                    Offset.zero,
-                    (radius / 2) * (1 - particle.progress),
-                    Paint()..color = color.withOpacity(1 - particle.progress),
-                  );
-                },
+          generator: (i) => AcceleratedParticle(
+            speed: randomVector2(),
+            acceleration: randomVector2(),
+            child: ComputedParticle(
+              renderer: (canvas, particle) => canvas.drawCircle(
+                Offset.zero,
+                (r / 2) * (1 - particle.progress),
+                Paint()..color = color.withOpacity(1 - particle.progress),
               ),
-            );
-          },
+            ),
+          ),
         ),
       ),
     );
