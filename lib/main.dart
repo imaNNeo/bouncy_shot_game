@@ -2,6 +2,7 @@ import 'dart:math' hide Rectangle;
 
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
+import 'package:flame/experimental.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
@@ -76,6 +77,7 @@ class MyGame extends Forge2DGame with DragCallbacks {
       Wall(topLeft, bottomLeft),
     ]);
     camera.follow(currentPlayer, maxSpeed: 100, snap: true);
+    camera.setBounds(Rectangle.fromCenter(center: gameRect.center.toVector2(), size: Vector2.all(30)));
     super.onLoad();
   }
 
@@ -96,8 +98,11 @@ class MyGame extends Forge2DGame with DragCallbacks {
 
   @override
   void onDragEnd(DragEndEvent event) {
-    currentPlayer.fireBullet(dragging!);
+    if (!dragging!.isNan) {
+      currentPlayer.fireBullet(dragging!);
+    }
     dragging = null;
+
     super.onDragEnd(event);
   }
 
