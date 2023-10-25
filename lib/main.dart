@@ -1,5 +1,4 @@
 import 'dart:math' hide Rectangle;
-
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/events.dart';
@@ -27,7 +26,14 @@ class DraggingInfo {
 }
 
 class MyGame extends Forge2DGame with DragCallbacks {
-  MyGame() : super(gravity: Vector2.zero());
+  MyGame()
+      : super(
+          gravity: Vector2.zero(),
+          cameraComponent: CameraComponent.withFixedResolution(
+            width: 1000,
+            height: 1000,
+          ),
+        );
   static const availableColors = [
     Colors.red,
     Colors.green,
@@ -41,13 +47,12 @@ class MyGame extends Forge2DGame with DragCallbacks {
   DraggingInfo? dragging;
   late Player currentPlayer;
 
-  Rect get gameRect => const Rect.fromLTWH(0, 0, 100, 100);
+  Rect get gameRect => const Rect.fromLTWH(-50, -50, 100, 100).deflate(4);
 
   @override
   Future<void> onLoad() async {
-    await FlameAudio.audioCache.load('explosion.wav');
     FlameAudio.bgm.initialize();
-    FlameAudio.bgm.play('bg.mp3');
+    // FlameAudio.bgm.play('bg.mp3');
     final tl = gameRect.topLeft.toVector2();
     final tr = gameRect.topRight.toVector2();
     final br = gameRect.bottomRight.toVector2();
@@ -69,8 +74,6 @@ class MyGame extends Forge2DGame with DragCallbacks {
       ...[Wall(tl, tr), Wall(tr, br), Wall(bl, br), Wall(tl, bl)],
       AimLine(),
     ]);
-    camera.viewport.position = gameRect.center.toVector2();
-    camera.viewport.anchor = Anchor.center;
     super.onLoad();
   }
 
@@ -167,11 +170,10 @@ class Player extends BodyComponent {
     await world.add(
       Bullet(
         playerKey: key,
-        initialPosition:
-            position + (Vector2(cos(ang), sin(ang)) * (r + bulletR)),
+        initPos: position + (Vector2(cos(ang), sin(ang)) * (r + bulletR)),
         radius: bulletR,
         color: color,
-        initialLinearImpulse: dragging.direction * speed * 100000,
+        initLinearImpulse: dragging.direction * speed * 100000,
       ),
     );
   }
@@ -213,21 +215,21 @@ class Player extends BodyComponent {
 class Bullet extends BodyComponent with ContactCallbacks {
   Bullet({
     required this.playerKey,
-    required this.initialPosition,
+    required this.initPos,
     required this.radius,
     required this.color,
-    required this.initialLinearImpulse,
+    required this.initLinearImpulse,
   });
 
   final ComponentKey playerKey;
-  final Vector2 initialPosition;
-  final Vector2 initialLinearImpulse;
+  final Vector2 initPos;
+  final Vector2 initLinearImpulse;
 
   @override
   Body createBody() => world.createBody(
         BodyDef(
           angularDamping: 0.8,
-          position: initialPosition,
+          position: initPos,
           type: BodyType.dynamic,
           bullet: true,
           userData: this,
@@ -245,7 +247,7 @@ class Bullet extends BodyComponent with ContactCallbacks {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    body.applyLinearImpulse(initialLinearImpulse);
+    body.applyLinearImpulse(initLinearImpulse);
   }
 
   final double radius;
@@ -260,17 +262,15 @@ class Bullet extends BodyComponent with ContactCallbacks {
   @override
   void beginContact(Object other, Contact contact) {
     if (other is Wall) {
-      explode();
+      removeFromParent();
     } else if (other is Player) {
       if (other.key == playerKey) {
         return;
       }
       other.kill();
-      explode();
+      removeFromParent();
     }
   }
-
-  void explode() => removeFromParent();
 }
 
 class Wall extends BodyComponent {
