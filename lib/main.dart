@@ -58,6 +58,7 @@ class MyGame extends Forge2DGame with DragCallbacks {
     world.addAll(bots = List.generate(
       10,
       (index) => Player(
+        key: ComponentKey.named('player_$index'),
         initialPosition: gameRect.deflate(10).randomPoint(),
         color: availableColors.random(),
       ),
@@ -130,30 +131,32 @@ class AimLine extends PositionComponent with HasGameRef<MyGame> {
   }
 }
 
-class Player extends BodyComponent with TapCallbacks {
+class Player extends BodyComponent {
   Player({
-    Vector2? initialPosition,
-    super.key,
-    this.radius = 3,
+    required this.initialPosition,
     required this.color,
-  }) : super(
-          fixtureDefs: [
-            FixtureDef(
-              CircleShape()..radius = radius,
-              restitution: 0.8,
-              density: 10.0,
-              friction: 0.5,
-            ),
-          ],
-          bodyDef: BodyDef(
-            angularDamping: 0.8,
-            position: initialPosition ?? Vector2.zero(),
-            type: BodyType.dynamic,
-          ),
-        );
+    required this.key,
+    this.radius = 3,
+  }) : super(key: key);
 
+  final ComponentKey key;
+  final Vector2 initialPosition;
   final double radius;
   final Color color;
+
+  @override
+  Body createBody() => world.createBody(BodyDef(
+        angularDamping: 0.8,
+        position: initialPosition,
+        type: BodyType.dynamic,
+      ))
+        ..createFixture(FixtureDef(
+          CircleShape()..radius = radius,
+          restitution: 0.8,
+          density: 10.0,
+          friction: 0.5,
+          userData: this,
+        ));
 
   @override
   void render(Canvas canvas) {
@@ -170,38 +173,57 @@ class Player extends BodyComponent with TapCallbacks {
     body.applyLinearImpulse(-dragging.direction * dragging.length * 1000);
     final angle = atan2(dragging.direction.y, dragging.direction.x);
     const bulletRadius = 0.5;
+    final speed = dragging.length / 100000;
     final bullet = Bullet(
-      position: position +
+      playerKey: key,
+      initialPosition: position +
           (Vector2(cos(angle), sin(angle)) * (radius + bulletRadius)),
       radius: bulletRadius,
       color: color,
+      initialLinearImpulse: dragging.direction * speed * 100000,
     );
     await world.add(bullet);
-    bullet.body.applyLinearImpulse(dragging.direction * dragging.length * 100000);
+  }
+
+  void kill() {
+    removeFromParent();
   }
 }
 
-class Bullet extends BodyComponent with TapCallbacks {
+class Bullet extends BodyComponent with ContactCallbacks {
   Bullet({
-    required Vector2 position,
+    required this.playerKey,
+    required this.initialPosition,
     required this.radius,
     required this.color,
-  }) : super(
-          fixtureDefs: [
-            FixtureDef(
-              CircleShape()..radius = radius,
-              restitution: 0.8,
-              density: 1.0,
-              friction: 0.5,
-            ),
-          ],
-          bodyDef: BodyDef(
-            angularDamping: 0.8,
-            position: position,
-            type: BodyType.dynamic,
-            bullet: true,
-          ),
-        );
+    required this.initialLinearImpulse,
+  });
+
+  final ComponentKey playerKey;
+  final Vector2 initialPosition;
+  final Vector2 initialLinearImpulse;
+
+  @override
+  Body createBody() => world.createBody(BodyDef(
+        angularDamping: 0.8,
+        position: initialPosition,
+        type: BodyType.dynamic,
+        bullet: true,
+        userData: this,
+      ))
+        ..createFixture(FixtureDef(
+          CircleShape()..radius = radius,
+          restitution: 0.8,
+          density: 1.0,
+          friction: 0.5,
+          userData: this,
+        ));
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    body.applyLinearImpulse(initialLinearImpulse);
+  }
 
   final double radius;
   final Color color;
@@ -215,6 +237,23 @@ class Bullet extends BodyComponent with TapCallbacks {
       Paint()..color = color,
     );
   }
+
+  @override
+  void beginContact(Object other, Contact contact) {
+    if (other is Wall) {
+      explode();
+    } else if (other is Player) {
+      if (other.key == playerKey) {
+        return;
+      }
+      other.kill();
+      explode();
+    }
+  }
+
+  void explode() {
+    removeFromParent();
+  }
 }
 
 class Wall extends BodyComponent {
@@ -227,7 +266,7 @@ class Wall extends BodyComponent {
   Body createBody() {
     final shape = EdgeShape()..set(_start, _end);
     final fixtureDef = FixtureDef(shape);
-    final bodyDef = BodyDef(type: BodyType.static);
+    final bodyDef = BodyDef(type: BodyType.static, userData: this);
     return world.createBody(bodyDef)..createFixture(fixtureDef);
   }
 
