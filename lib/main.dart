@@ -106,18 +106,12 @@ class Player extends BodyComponent {
     required this.color,
     this.mainPlayer = false,
     this.r = 3,
-  }) {
-    nextShootTime = nextRandomShootTime();
-  }
+  });
 
   final Vector2 initPos;
   final double r;
   final Color color;
-  late DateTime nextShootTime;
   final bool mainPlayer;
-
-  DateTime nextRandomShootTime() =>
-      DateTime.now().add(Duration(milliseconds: Random().nextInt(2000)));
 
   @override
   Body createBody() => world.createBody(
@@ -129,7 +123,7 @@ class Player extends BodyComponent {
       )..createFixture(
           FixtureDef(
             CircleShape()..radius = r,
-            restitution: 0.8,
+            restitution: 0.7,
             density: 10.0,
             friction: 0.5,
             userData: this,
@@ -137,42 +131,27 @@ class Player extends BodyComponent {
         );
 
   @override
-  void update(double dt) {
-    super.update(dt);
-    if (!mainPlayer && DateTime.now().isAfter(nextShootTime)) {
-      nextShootTime = nextRandomShootTime();
-      fireBullet(
-        Random().nextDouble() * pi * 2,
-        onlyMove: game.world.children.length > 6,
-      );
-    }
-  }
-
-  @override
   void render(Canvas canvas) {
     super.render(canvas);
     canvas.drawCircle(Offset.zero, r, Paint()..color = color);
   }
 
-  Future<void> fireBullet(double angle, {bool onlyMove = false}) async {
+  Future<void> fireBullet(double angle) async {
     final dragLine = Vector2(cos(angle), sin(angle));
-    body.applyLinearImpulse(-dragLine.normalized() * 20000);
-    if (onlyMove) {
-      return;
-    }
+    body.applyLinearImpulse(-dragLine.normalized() * 200000);
     const bulletR = 0.5;
     await world.add(
       Bullet(
         initPos: position + (dragLine * (r + bulletR)),
         radius: bulletR,
         color: color,
-        initLinearImpulse: dragLine.normalized() * 20000,
+        initLinearImpulse: dragLine.normalized() * 400000,
       ),
     );
   }
 
   void kill() {
-    FlameAudio.play('explosion.wav');
+    // FlameAudio.play('explosion.wav');
     removeFromParent();
     Vector2 randomVector2() =>
         (Vector2.random(Random()) - Vector2.random(Random())) * 99;
@@ -264,7 +243,9 @@ class Bullet extends BodyComponent with ContactCallbacks {
 class Wall extends BodyComponent {
   @override
   Body createBody() => world.createBody(BodyDef(userData: this))
-    ..createFixture(FixtureDef(ChainShape()..createLoop(rect.toVertices())));
+    ..createFixture(
+      FixtureDef(ChainShape()..createLoop(rect.toVertices()), restitution: 1),
+    );
 
   @override
   void render(Canvas canvas) {
