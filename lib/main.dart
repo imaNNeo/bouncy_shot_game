@@ -12,6 +12,8 @@ import 'package:flutter/material.dart';
 
 void main() => runApp(GameWidget(game: MyGame()));
 
+Rect get rect => const Rect.fromLTWH(-50, -50, 100, 100).deflate(4);
+
 class DraggingInfo {
   Vector2 startPosition;
   Vector2 currentPosition;
@@ -47,31 +49,25 @@ class MyGame extends Forge2DGame with DragCallbacks {
   DraggingInfo? dragging;
   late Player currentPlayer;
 
-  Rect get gameRect => const Rect.fromLTWH(-50, -50, 100, 100).deflate(4);
-
   @override
   Future<void> onLoad() async {
     FlameAudio.bgm.initialize();
     FlameAudio.bgm.play('bg.mp3');
-    final tl = gameRect.topLeft.toVector2();
-    final tr = gameRect.topRight.toVector2();
-    final br = gameRect.bottomRight.toVector2();
-    final bl = gameRect.bottomLeft.toVector2();
     await world.addAll([
       ...List.generate(
         10,
         (index) => Player(
           key: ComponentKey.named('player_$index'),
-          initPos: gameRect.deflate(10).randomPoint(),
+          initPos: rect.deflate(10).randomPoint(),
           color: availableColors.random(),
         ),
       ),
       currentPlayer = Player(
         key: ComponentKey.named('mainPlayerKey'),
-        initPos: gameRect.center.toVector2(),
+        initPos: rect.center.toVector2(),
         color: Colors.white,
       ),
-      ...[Wall(tl, tr), Wall(tr, br), Wall(bl, br), Wall(tl, bl)],
+      Wall(),
       AimLine(),
     ]);
     super.onLoad();
@@ -274,21 +270,16 @@ class Bullet extends BodyComponent with ContactCallbacks {
 }
 
 class Wall extends BodyComponent {
-  final Vector2 _start;
-  final Vector2 _end;
-
-  Wall(this._start, this._end);
-
   @override
   Body createBody() => world.createBody(BodyDef(userData: this))
-    ..createFixture(FixtureDef(EdgeShape()..set(_start, _end)));
+    ..createFixture(FixtureDef(ChainShape()..createLoop(rect.toVertices())));
 
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    canvas.drawLine(
-      _start.toOffset(),
-      _end.toOffset(),
+    renderBody = false;
+    canvas.drawRect(
+      rect,
       Paint()
         ..color = Colors.white
         ..style = PaintingStyle.stroke
