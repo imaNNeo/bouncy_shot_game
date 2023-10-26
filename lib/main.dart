@@ -1,4 +1,5 @@
 import 'dart:math' hide Rectangle;
+import 'package:flame/cache.dart';
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/events.dart';
@@ -36,30 +37,24 @@ class MyGame extends Forge2DGame with DragCallbacks {
             height: 1000,
           ),
         );
-  static const availableColors = [
-    Colors.red,
-    Colors.green,
-    Colors.blueAccent,
-    Colors.purple,
-    Colors.cyanAccent,
-    Colors.deepPurpleAccent,
-    Colors.orangeAccent,
-    Colors.pink,
-  ];
   DraggingInfo? dragging;
   late Player currentPlayer;
 
   @override
   Future<void> onLoad() async {
+    final data = await AssetsCache().readJson('data/data.json');
+    final availableColors = (data['colors'] as List<dynamic>)
+        .map((e) => Color(int.parse(e as String)))
+        .toList();
     FlameAudio.bgm.initialize();
-    FlameAudio.bgm.play('bg.mp3');
+    // FlameAudio.bgm.play('bg.mp3');
     await world.addAll([
       ...List.generate(
         10,
         (index) => Player(
           key: ComponentKey.named('player_$index'),
           initPos: rect.deflate(10).randomPoint(),
-          color: availableColors.random(),
+          color: availableColors.toList().random(),
         ),
       ),
       currentPlayer = Player(
