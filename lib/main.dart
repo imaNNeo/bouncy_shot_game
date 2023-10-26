@@ -159,6 +159,9 @@ class Player extends BodyComponent {
   }
 
   Future<void> fireBullet(DraggingInfo dragging) async {
+    if (dragging.length < 50) {
+      return;
+    }
     body.applyLinearImpulse(-dragging.direction * dragging.length * 1000);
     final ang = atan2(dragging.direction.y, dragging.direction.x);
     const bulletR = 0.5;
