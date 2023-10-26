@@ -15,19 +15,6 @@ void main() => runApp(GameWidget(game: MyGame()));
 
 Rect get rect => const Rect.fromLTWH(-50, -50, 100, 100).deflate(4);
 
-class DraggingInfo {
-  Vector2 startPosition;
-  Vector2 currentPosition;
-
-  double get length => (startPosition - currentPosition).length;
-
-  bool get isNan => startPosition.isNaN || currentPosition.isNaN;
-
-  Vector2 get direction => (startPosition - currentPosition).normalized();
-
-  DraggingInfo(this.startPosition, this.currentPosition);
-}
-
 class MyGame extends Forge2DGame with DragCallbacks {
   MyGame()
       : super(
@@ -37,8 +24,15 @@ class MyGame extends Forge2DGame with DragCallbacks {
             height: 1000,
           ),
         );
-  DraggingInfo? dragging;
+  Vector2? draggingPos;
   late Player currentPlayer;
+
+  Vector2? get dragLine => draggingPos == null || draggingPos!.isNaN
+      ? null
+      : draggingPos! - currentPlayer.position;
+
+  double? get dragAngle =>
+      dragLine == null ? null : -atan2(dragLine!.x, dragLine!.y) + pi / 2;
 
   @override
   Future<void> onLoad() async {
@@ -69,29 +63,23 @@ class MyGame extends Forge2DGame with DragCallbacks {
   }
 
   @override
-  void onDragStart(DragStartEvent event) {
-    dragging = DraggingInfo(event.localPosition, event.localPosition);
-    super.onDragStart(event);
-  }
-
-  @override
   void onDragUpdate(DragUpdateEvent event) {
-    dragging!.currentPosition = event.localPosition;
+    draggingPos = screenToWorld(event.localPosition);
     super.onDragUpdate(event);
   }
 
   @override
   void onDragEnd(DragEndEvent event) {
-    if (!dragging!.isNan) {
-      currentPlayer.fireBullet(dragging!);
+    if (!draggingPos!.isNaN) {
+      currentPlayer.fireBullet(draggingPos!);
     }
-    dragging = null;
+    draggingPos = null;
     super.onDragEnd(event);
   }
 
   @override
   void onDragCancel(DragCancelEvent event) {
-    dragging = null;
+    draggingPos = null;
     super.onDragCancel(event);
   }
 }
@@ -100,15 +88,11 @@ class AimLine extends PositionComponent with HasGameRef<MyGame> {
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    final dragging = game.dragging;
-    if (dragging != null && !dragging.isNan) {
-      final direction = dragging.direction;
-      final angle = -atan2(direction.x, direction.y) + pi / 2;
-      final length = dragging.length / 10;
-      final ballOffset = game.currentPlayer.position.toOffset();
+    if (game.dragAngle != null) {
+      final playerPos = game.currentPlayer.position.toOffset();
       canvas.drawLine(
-        ballOffset,
-        ballOffset + Offset(cos(angle), sin(angle)) * min(length, 10.0),
+        playerPos,
+        playerPos + (Offset(cos(game.dragAngle!), sin(game.dragAngle!)) * 10.0),
         Paint()
           ..color = Colors.lightGreenAccent
           ..strokeWidth = 0.2,
@@ -153,21 +137,19 @@ class Player extends BodyComponent {
     canvas.drawCircle(Offset.zero, r, Paint()..color = color);
   }
 
-  Future<void> fireBullet(DraggingInfo dragging) async {
-    if (dragging.length < 50) {
-      return;
-    }
-    body.applyLinearImpulse(-dragging.direction * dragging.length * 1000);
-    final ang = atan2(dragging.direction.y, dragging.direction.x);
+  Future<void> fireBullet(Vector2 draggingPos) async {
+    final dragLine = (game as MyGame).dragLine!;
+    final dragAngle = (game as MyGame).dragAngle!;
+    body.applyLinearImpulse(-dragLine.normalized() * 20000);
     const bulletR = 0.5;
-    final speed = dragging.length / 100000;
     await world.add(
       Bullet(
         playerKey: key,
-        initPos: position + (Vector2(cos(ang), sin(ang)) * (r + bulletR)),
+        initPos: position +
+            (Vector2(cos(dragAngle), sin(dragAngle)) * (r + bulletR)),
         radius: bulletR,
         color: color,
-        initLinearImpulse: dragging.direction * speed * 100000,
+        initLinearImpulse: dragLine.normalized() * 20000,
       ),
     );
   }
