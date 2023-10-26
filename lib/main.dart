@@ -7,7 +7,7 @@ import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
 import 'package:flame/particles.dart';
 import 'package:flame_audio/flame_audio.dart';
-import 'package:flame_forge2d/flame_forge2d.dart' hide Particle;
+import 'package:flame_forge2d/flame_forge2d.dart' hide Particle, Timer;
 import 'package:flame_noise/flame_noise.dart';
 import 'package:flutter/material.dart';
 
@@ -27,12 +27,12 @@ class MyGame extends Forge2DGame with DragCallbacks {
   Vector2? draggingPos;
   late Player currentPlayer;
 
-  Vector2? get dragLine => draggingPos == null || draggingPos!.isNaN
+  Vector2? get _dragLine => draggingPos == null || draggingPos!.isNaN
       ? null
       : draggingPos! - currentPlayer.position;
 
   double? get dragAngle =>
-      dragLine == null ? null : -atan2(dragLine!.x, dragLine!.y) + pi / 2;
+      _dragLine == null ? null : -atan2(_dragLine!.x, _dragLine!.y) + pi / 2;
 
   @override
   Future<void> onLoad() async {
@@ -46,13 +46,12 @@ class MyGame extends Forge2DGame with DragCallbacks {
       ...List.generate(
         10,
         (index) => Player(
-          key: ComponentKey.named('player_$index'),
           initPos: rect.deflate(10).randomPoint(),
           color: availableColors.toList().random(),
         ),
       ),
       currentPlayer = Player(
-        key: ComponentKey.named('mainPlayerKey'),
+        mainPlayer: true,
         initPos: rect.center.toVector2(),
         color: Colors.white,
       ),
@@ -70,8 +69,8 @@ class MyGame extends Forge2DGame with DragCallbacks {
 
   @override
   void onDragEnd(DragEndEvent event) {
-    if (!draggingPos!.isNaN) {
-      currentPlayer.fireBullet(draggingPos!);
+    if (!dragAngle!.isNaN) {
+      currentPlayer.fireBullet(dragAngle!);
     }
     draggingPos = null;
     super.onDragEnd(event);
@@ -105,14 +104,20 @@ class Player extends BodyComponent {
   Player({
     required this.initPos,
     required this.color,
-    required this.key,
+    this.mainPlayer = false,
     this.r = 3,
-  }) : super(key: key);
+  }) {
+    nextShootTime = nextRandomShootTime();
+  }
 
-  final ComponentKey key;
   final Vector2 initPos;
   final double r;
   final Color color;
+  late DateTime nextShootTime;
+  final bool mainPlayer;
+
+  DateTime nextRandomShootTime() =>
+      DateTime.now().add(Duration(milliseconds: Random().nextInt(2000)));
 
   @override
   Body createBody() => world.createBody(
@@ -132,21 +137,33 @@ class Player extends BodyComponent {
         );
 
   @override
+  void update(double dt) {
+    super.update(dt);
+    if (!mainPlayer && DateTime.now().isAfter(nextShootTime)) {
+      nextShootTime = nextRandomShootTime();
+      fireBullet(
+        Random().nextDouble() * pi * 2,
+        onlyMove: game.world.children.length > 6,
+      );
+    }
+  }
+
+  @override
   void render(Canvas canvas) {
     super.render(canvas);
     canvas.drawCircle(Offset.zero, r, Paint()..color = color);
   }
 
-  Future<void> fireBullet(Vector2 draggingPos) async {
-    final dragLine = (game as MyGame).dragLine!;
-    final dragAngle = (game as MyGame).dragAngle!;
+  Future<void> fireBullet(double angle, {bool onlyMove = false}) async {
+    final dragLine = Vector2(cos(angle), sin(angle));
     body.applyLinearImpulse(-dragLine.normalized() * 20000);
+    if (onlyMove) {
+      return;
+    }
     const bulletR = 0.5;
     await world.add(
       Bullet(
-        playerKey: key,
-        initPos: position +
-            (Vector2(cos(dragAngle), sin(dragAngle)) * (r + bulletR)),
+        initPos: position + (dragLine * (r + bulletR)),
         radius: bulletR,
         color: color,
         initLinearImpulse: dragLine.normalized() * 20000,
@@ -190,14 +207,12 @@ class Player extends BodyComponent {
 
 class Bullet extends BodyComponent with ContactCallbacks {
   Bullet({
-    required this.playerKey,
     required this.initPos,
     required this.radius,
     required this.color,
     required this.initLinearImpulse,
   });
 
-  final ComponentKey playerKey;
   final Vector2 initPos;
   final Vector2 initLinearImpulse;
 
@@ -239,10 +254,7 @@ class Bullet extends BodyComponent with ContactCallbacks {
   void beginContact(Object other, Contact contact) {
     if (other is Wall) {
       removeFromParent();
-    } else if (other is Player) {
-      if (other.key == playerKey) {
-        return;
-      }
+    } else if (other is Player && !other.mainPlayer) {
       other.kill();
       removeFromParent();
     }
