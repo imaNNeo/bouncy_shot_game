@@ -244,7 +244,7 @@ class Wall extends BodyComponent {
   @override
   Body createBody() => world.createBody(BodyDef(userData: this))
     ..createFixture(
-      FixtureDef(ChainShape()..createLoop(rect.toVertices()), restitution: 1),
+      FixtureDef(ChainShape()..createLoop(rect.toVertices()), restitution: 0.8),
     );
 
   @override
