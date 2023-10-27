@@ -29,7 +29,7 @@ class MyGame extends Forge2DGame with DragCallbacks {
 
   Vector2? get _dragLine => draggingPos == null || draggingPos!.isNaN
       ? null
-      : draggingPos! - currentPlayer.position;
+      : currentPlayer.position - draggingPos!;
 
   double? get dragAngle =>
       _dragLine == null ? null : -atan2(_dragLine!.x, _dragLine!.y) + pi / 2;
