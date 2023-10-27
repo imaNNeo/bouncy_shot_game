@@ -6,17 +6,18 @@ import 'package:flame/events.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
 import 'package:flame/particles.dart';
+import 'package:flame/rendering.dart';
 import 'package:flame_audio/flame_audio.dart';
 import 'package:flame_forge2d/flame_forge2d.dart' hide Particle, Timer;
 import 'package:flame_noise/flame_noise.dart';
 import 'package:flutter/material.dart';
 
-void main() => runApp(GameWidget(game: MyGame()));
+void main() => runApp(GameWidget(game: Game()));
 
 Rect get rect => const Rect.fromLTWH(-50, -50, 100, 100).deflate(4);
 
-class MyGame extends Forge2DGame with DragCallbacks {
-  MyGame()
+class Game extends Forge2DGame with DragCallbacks, HasTimeScale, HasDecorator {
+  Game()
       : super(
           gravity: Vector2.zero(),
           cameraComponent: CameraComponent.withFixedResolution(
@@ -24,15 +25,19 @@ class MyGame extends Forge2DGame with DragCallbacks {
             height: 1000,
           ),
         );
+  Vector2? draggingPosStart;
   Vector2? draggingPos;
   late Player currentPlayer;
 
   Vector2? get _dragLine => draggingPos == null || draggingPos!.isNaN
       ? null
-      : currentPlayer.position - draggingPos!;
+      : draggingPosStart! - draggingPos!;
 
   double? get dragAngle =>
       _dragLine == null ? null : -atan2(_dragLine!.x, _dragLine!.y) + pi / 2;
+
+  late TextComponent topText;
+  final double bulletR = 0.5;
 
   @override
   Color backgroundColor() => const Color(0xFF030a1a);
@@ -55,14 +60,41 @@ class MyGame extends Forge2DGame with DragCallbacks {
           color: colors.random(),
         ),
       ),
-      AimLine(),
+      // AimLine(),
       currentPlayer = Player(
         mainPlayer: true,
         initPos: rect.center.toVector2(),
         color: const Color(0xFFeeeeee),
       ),
     ]);
+    camera.viewfinder.add(
+      topText = TextComponent(
+        text: '0',
+        position: rect.topCenter.toVector2() + Vector2(0, 1),
+        anchor: Anchor.topCenter,
+        textRenderer: TextPaint(style: const TextStyle(fontSize: 6)),
+      ),
+    );
     super.onLoad();
+  }
+
+  double remain = 3;
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    remain -= dt;
+    if (remain <= 0 || world.children.length <= 3) {
+      decorator = PaintDecorator.grayscale();
+      FlameAudio.bgm.stop();
+      timeScale = 0.0;
+    }
+  }
+
+  @override
+  void onDragStart(DragStartEvent event) {
+    draggingPosStart = screenToWorld(event.localPosition);
+    super.onDragStart(event);
   }
 
   @override
@@ -73,7 +105,7 @@ class MyGame extends Forge2DGame with DragCallbacks {
 
   @override
   void onDragEnd(DragEndEvent event) {
-    if (!dragAngle!.isNaN) {
+    if (dragAngle != null && !dragAngle!.isNaN && timeScale == 1.0) {
       currentPlayer.fireBullet(dragAngle!);
     }
     draggingPos = null;
@@ -87,24 +119,7 @@ class MyGame extends Forge2DGame with DragCallbacks {
   }
 }
 
-class AimLine extends PositionComponent with HasGameRef<MyGame> {
-  @override
-  void render(Canvas canvas) {
-    super.render(canvas);
-    if (game.dragAngle != null) {
-      final playerPos = game.currentPlayer.position.toOffset();
-      canvas.drawLine(
-        playerPos,
-        playerPos + (Offset(cos(game.dragAngle!), sin(game.dragAngle!)) * 10.0),
-        Paint()
-          ..color = const Color(0xffb409ba)
-          ..strokeWidth = 0.5,
-      );
-    }
-  }
-}
-
-class Player extends BodyComponent {
+class Player extends BodyComponent<Game> {
   Player({
     required this.initPos,
     required this.color,
@@ -137,18 +152,25 @@ class Player extends BodyComponent {
   @override
   void render(Canvas canvas) {
     super.render(canvas);
+    if (game.dragAngle != null && game.timeScale == 1.0 && mainPlayer) {
+      final normalAngle = game.dragAngle! - angle;
+      canvas.drawLine(
+        Offset.zero,
+        Offset.zero + (Offset(cos(normalAngle), sin(normalAngle)) * 10.0),
+        Paint()
+          ..color = const Color(0xffb409ba)
+          ..strokeWidth = 0.5,
+      );
+    }
     canvas.drawCircle(Offset.zero, r, Paint()..color = color);
   }
 
   Future<void> fireBullet(double angle) async {
     final dragLine = Vector2(cos(angle), sin(angle));
     body.applyLinearImpulse(-dragLine.normalized() * 200000);
-    const bulletR = 0.5;
     await world.add(
       Bullet(
-        initPos: position + (dragLine * (r + bulletR)),
-        radius: bulletR,
-        color: color,
+        initPos: position + (dragLine * (r + game.bulletR)),
         initLinearImpulse: dragLine.normalized() * 400000,
       ),
     );
@@ -188,11 +210,9 @@ class Player extends BodyComponent {
   }
 }
 
-class Bullet extends BodyComponent with ContactCallbacks {
+class Bullet extends BodyComponent<Game> with ContactCallbacks {
   Bullet({
     required this.initPos,
-    required this.radius,
-    required this.color,
     required this.initLinearImpulse,
   });
 
@@ -210,7 +230,7 @@ class Bullet extends BodyComponent with ContactCallbacks {
         ),
       )..createFixture(
           FixtureDef(
-            CircleShape()..radius = radius,
+            CircleShape()..radius = game.bulletR,
             restitution: 0.8,
             density: 1.0,
             friction: 0.5,
@@ -224,13 +244,10 @@ class Bullet extends BodyComponent with ContactCallbacks {
     body.applyLinearImpulse(initLinearImpulse);
   }
 
-  final double radius;
-  final Color color;
-
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    canvas.drawCircle(Offset.zero, radius, Paint()..color = color);
+    canvas.drawCircle(Offset.zero, game.bulletR, Paint()..color = Colors.white);
   }
 
   @override
@@ -240,11 +257,12 @@ class Bullet extends BodyComponent with ContactCallbacks {
     } else if (other is Player && !other.mainPlayer) {
       other.kill();
       removeFromParent();
+      game.topText.text = (int.parse(game.topText.text) + 1).toString();
     }
   }
 }
 
-class WallBox extends BodyComponent {
+class WallBox extends BodyComponent<Game> {
   @override
   Body createBody() => world.createBody(BodyDef(userData: this))
     ..createFixture(
@@ -255,14 +273,16 @@ class WallBox extends BodyComponent {
   void render(Canvas canvas) {
     super.render(canvas);
     renderBody = false;
+    final paint = Paint()
+      ..color = const Color(0xFF0b1224)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
     canvas.drawRect(rect, Paint()..color = const Color(0xFF12192b));
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..color = const Color(0xFF0b1224)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..strokeCap = StrokeCap.square,
+    canvas.drawRect(rect, paint);
+    final topRight = Offset(
+      max(rect.left, rect.left + (rect.right - rect.left) * game.remain / 3.0),
+      rect.top,
     );
+    canvas.drawLine(rect.topLeft, topRight, paint..color = Colors.white);
   }
 }

@@ -12,6 +12,7 @@ dependencies:
   flame_noise: ^0.1.1+7
   flutter:
     sdk: flutter
+  restart_app: ^1.2.1
 
 dev_dependencies:
   flame_lint: ^1.1.1
