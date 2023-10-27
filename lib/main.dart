@@ -35,28 +35,32 @@ class MyGame extends Forge2DGame with DragCallbacks {
       _dragLine == null ? null : -atan2(_dragLine!.x, _dragLine!.y) + pi / 2;
 
   @override
+  Color backgroundColor() => const Color(0xFF030a1a);
+
+  Future<Iterable<Color>> get playerColors => AssetsCache()
+      .readJson('data/colors.json')
+      .then((v) => (v['c'] as List).map((e) => Color(int.parse(e as String))));
+
+  @override
   Future<void> onLoad() async {
-    final data = await AssetsCache().readJson('data/data.json');
-    final availableColors = (data['colors'] as List<dynamic>)
-        .map((e) => Color(int.parse(e as String)))
-        .toList();
+    final colors = (await playerColors).toList();
     FlameAudio.bgm.initialize();
     // FlameAudio.bgm.play('bg.mp3');
     await world.addAll([
+      WallBox(),
       ...List.generate(
         10,
         (index) => Player(
           initPos: rect.deflate(10).randomPoint(),
-          color: availableColors.toList().random(),
+          color: colors.random(),
         ),
       ),
+      AimLine(),
       currentPlayer = Player(
         mainPlayer: true,
         initPos: rect.center.toVector2(),
-        color: Colors.white,
+        color: const Color(0xFFeeeeee),
       ),
-      Wall(),
-      AimLine(),
     ]);
     super.onLoad();
   }
@@ -93,8 +97,8 @@ class AimLine extends PositionComponent with HasGameRef<MyGame> {
         playerPos,
         playerPos + (Offset(cos(game.dragAngle!), sin(game.dragAngle!)) * 10.0),
         Paint()
-          ..color = Colors.lightGreenAccent
-          ..strokeWidth = 0.2,
+          ..color = const Color(0xffb409ba)
+          ..strokeWidth = 0.5,
       );
     }
   }
@@ -231,7 +235,7 @@ class Bullet extends BodyComponent with ContactCallbacks {
 
   @override
   void beginContact(Object other, Contact contact) {
-    if (other is Wall) {
+    if (other is WallBox) {
       removeFromParent();
     } else if (other is Player && !other.mainPlayer) {
       other.kill();
@@ -240,7 +244,7 @@ class Bullet extends BodyComponent with ContactCallbacks {
   }
 }
 
-class Wall extends BodyComponent {
+class WallBox extends BodyComponent {
   @override
   Body createBody() => world.createBody(BodyDef(userData: this))
     ..createFixture(
@@ -251,10 +255,11 @@ class Wall extends BodyComponent {
   void render(Canvas canvas) {
     super.render(canvas);
     renderBody = false;
+    canvas.drawRect(rect, Paint()..color = const Color(0xFF12192b));
     canvas.drawRect(
       rect,
       Paint()
-        ..color = Colors.white
+        ..color = const Color(0xFF0b1224)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.5
         ..strokeCap = StrokeCap.square,
