@@ -261,7 +261,7 @@ class WallBox extends BodyComponent {
       Paint()
         ..color = const Color(0xFF0b1224)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.5
+        ..strokeWidth = 2
         ..strokeCap = StrokeCap.square,
     );
   }
