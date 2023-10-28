@@ -51,7 +51,7 @@ class Game extends Forge2DGame with DragCallbacks, HasTimeScale, HasDecorator {
   Future<void> onLoad() async {
     final colors = (await playerColors).toList();
     FlameAudio.bgm.initialize();
-    FlameAudio.bgm.play('bg.mp3');
+    // FlameAudio.bgm.play('bg.mp3');
     await world.addAll([
       WallBox(),
       ...List.generate(
@@ -73,7 +73,9 @@ class Game extends Forge2DGame with DragCallbacks, HasTimeScale, HasDecorator {
         text: '0',
         position: rect.topCenter.toVector2() + Vector2(0, 1),
         anchor: Anchor.topLeft,
-        textRenderer: TextPaint(style: const TextStyle(fontSize: 6)),
+        textRenderer: TextPaint(
+          style: const TextStyle(fontSize: 6, shadows: [Shadow(blurRadius: 8)]),
+        ),
       ),
     );
     super.onLoad();
@@ -88,7 +90,9 @@ class Game extends Forge2DGame with DragCallbacks, HasTimeScale, HasDecorator {
     remain -= dt;
     if (remain <= 0 || world.children.length <= 3) {
       topText.position = rect.center.toVector2();
-      topText.textRenderer = TextPaint(style: const TextStyle(fontSize: 36));
+      topText.textRenderer = TextPaint(
+        style: const TextStyle(fontSize: 36, shadows: [Shadow(blurRadius: 40)]),
+      );
       topText.anchor = Anchor.center;
       decorator = PaintDecorator.grayscale();
       FlameAudio.bgm.stop();

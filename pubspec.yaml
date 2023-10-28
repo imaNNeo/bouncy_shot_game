@@ -12,6 +12,7 @@ dependencies:
   flame_noise: ^0.1.1+7
   flutter:
     sdk: flutter
+  flutter_phoenix: ^1.1.1
   restart_app: ^1.2.1
 
 dev_dependencies:
