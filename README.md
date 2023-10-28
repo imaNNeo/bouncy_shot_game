@@ -1,16 +1,6 @@
-# bouncy_shot_game
+# Bouncy Shot Game
 
-A new Flutter project.
+This is a game built by [Flutter](https://flutter.dev/) and [Flame game engine](https://flame-engine.org/), it is a submission to participate in the Flame [6th birthday contest](https://twitter.com/spydon/status/1716107321846210656)
+It contains only **298** lines of Dart code (check the [commit](https://github.com/imaNNeo/bouncy_shot_game/commit/7831ab5d8c7f48e2fb3f177f81b63efc4375fbc2)), and it is a playable game
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+More details: [My tweet](https://twitter.com/imaN__NeO/status/1718386149947818019), [video link](https://youtu.be/hR7_r7_67Xk)
