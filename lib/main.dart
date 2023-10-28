@@ -38,6 +38,7 @@ class Game extends Forge2DGame with DragCallbacks, HasTimeScale, HasDecorator {
 
   late TextComponent topText;
   final double bulletR = 0.5;
+  final double playerR = 3.0;
 
   @override
   Color backgroundColor() => const Color(0xFF030a1a);
@@ -71,7 +72,7 @@ class Game extends Forge2DGame with DragCallbacks, HasTimeScale, HasDecorator {
       topText = TextComponent(
         text: '0',
         position: rect.topCenter.toVector2() + Vector2(0, 1),
-        anchor: Anchor.topCenter,
+        anchor: Anchor.topLeft,
         textRenderer: TextPaint(style: const TextStyle(fontSize: 6)),
       ),
     );
@@ -86,6 +87,9 @@ class Game extends Forge2DGame with DragCallbacks, HasTimeScale, HasDecorator {
     super.update(dt);
     remain -= dt;
     if (remain <= 0 || world.children.length <= 3) {
+      topText.position = rect.center.toVector2();
+      topText.textRenderer = TextPaint(style: const TextStyle(fontSize: 36));
+      topText.anchor = Anchor.center;
       decorator = PaintDecorator.grayscale();
       FlameAudio.bgm.stop();
       timeScale = 0.0;
@@ -125,11 +129,9 @@ class Player extends BodyComponent<Game> {
     required this.initPos,
     required this.color,
     this.mainPlayer = false,
-    this.r = 3,
   });
 
   final Vector2 initPos;
-  final double r;
   final Color color;
   final bool mainPlayer;
 
@@ -142,7 +144,7 @@ class Player extends BodyComponent<Game> {
         ),
       )..createFixture(
           FixtureDef(
-            CircleShape()..radius = r,
+            CircleShape()..radius = game.playerR,
             restitution: 0.7,
             density: 10.0,
             friction: 0.5,
@@ -163,7 +165,7 @@ class Player extends BodyComponent<Game> {
           ..strokeWidth = 0.5,
       );
     }
-    canvas.drawCircle(Offset.zero, r, Paint()..color = color);
+    canvas.drawCircle(Offset.zero, game.playerR, Paint()..color = color);
   }
 
   Future<void> fireBullet(double angle) async {
@@ -171,7 +173,7 @@ class Player extends BodyComponent<Game> {
     body.applyLinearImpulse(-dragLine.normalized() * 200000);
     await world.add(
       Bullet(
-        initPos: position + (dragLine * (r + game.bulletR)),
+        initPos: position + (dragLine * (game.playerR + game.bulletR)),
         initLinearImpulse: dragLine.normalized() * 400000,
       ),
     );
@@ -194,7 +196,7 @@ class Player extends BodyComponent<Game> {
             child: ComputedParticle(
               renderer: (canvas, particle) => canvas.drawCircle(
                 Offset.zero,
-                (r / 2) * (1 - particle.progress),
+                (game.playerR / 2) * (1 - particle.progress),
                 Paint()..color = color.withOpacity(1 - particle.progress),
               ),
             ),
@@ -283,7 +285,8 @@ class WallBox extends BodyComponent<Game> {
     final topRight = Offset(
       max(
         rect.left,
-        rect.left + (rect.right - rect.left) * game.remain / Game.totalTime,),
+        rect.left + (rect.right - rect.left) * game.remain / Game.totalTime,
+      ),
       rect.top,
     );
     canvas.drawLine(rect.topLeft, topRight, paint..color = Colors.white);
