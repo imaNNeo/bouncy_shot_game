@@ -81,7 +81,7 @@ class Game extends Forge2DGame with DragCallbacks, HasTimeScale, HasDecorator {
     super.onLoad();
   }
 
-  static const double totalTime = 20.0;
+  static const double totalTime = 25.0;
   double remain = totalTime;
 
   @override
