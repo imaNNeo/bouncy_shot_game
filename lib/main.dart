@@ -78,7 +78,8 @@ class Game extends Forge2DGame with DragCallbacks, HasTimeScale, HasDecorator {
     super.onLoad();
   }
 
-  double remain = 3;
+  static const double totalTime = 10.0;
+  double remain = totalTime;
 
   @override
   void update(double dt) {
@@ -280,7 +281,9 @@ class WallBox extends BodyComponent<Game> {
     canvas.drawRect(rect, Paint()..color = const Color(0xFF12192b));
     canvas.drawRect(rect, paint);
     final topRight = Offset(
-      max(rect.left, rect.left + (rect.right - rect.left) * game.remain / 3.0),
+      max(
+        rect.left,
+        rect.left + (rect.right - rect.left) * game.remain / Game.totalTime,),
       rect.top,
     );
     canvas.drawLine(rect.topLeft, topRight, paint..color = Colors.white);
