@@ -51,11 +51,11 @@ class Game extends Forge2DGame with DragCallbacks, HasTimeScale, HasDecorator {
   Future<void> onLoad() async {
     final colors = (await playerColors).toList();
     FlameAudio.bgm.initialize();
-    // FlameAudio.bgm.play('bg.mp3');
+    FlameAudio.bgm.play('bg.mp3');
     await world.addAll([
       WallBox(),
       ...List.generate(
-        15,
+        20,
         (index) => Player(
           initPos: rect.deflate(10).randomPoint(),
           color: colors.random(),
@@ -79,7 +79,7 @@ class Game extends Forge2DGame with DragCallbacks, HasTimeScale, HasDecorator {
     super.onLoad();
   }
 
-  static const double totalTime = 10.0;
+  static const double totalTime = 20.0;
   double remain = totalTime;
 
   @override
@@ -159,7 +159,7 @@ class Player extends BodyComponent<Game> {
       final normalAngle = game.dragAngle! - angle;
       canvas.drawLine(
         Offset.zero,
-        Offset.zero + (Offset(cos(normalAngle), sin(normalAngle)) * 20.0),
+        Offset.zero + (Offset(cos(normalAngle), sin(normalAngle)) * 10.0),
         Paint()
           ..color = const Color(0xffb409ba)
           ..strokeWidth = 0.5,
@@ -180,7 +180,7 @@ class Player extends BodyComponent<Game> {
   }
 
   void kill() {
-    // FlameAudio.play('explosion.wav');
+    FlameAudio.play('explosion.wav');
     removeFromParent();
     Vector2 randomVector2() =>
         (Vector2.random(Random()) - Vector2.random(Random())) * 99;
