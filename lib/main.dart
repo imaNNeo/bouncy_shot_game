@@ -55,7 +55,7 @@ class Game extends Forge2DGame with DragCallbacks, HasTimeScale, HasDecorator {
     await world.addAll([
       WallBox(),
       ...List.generate(
-        10,
+        15,
         (index) => Player(
           initPos: rect.deflate(10).randomPoint(),
           color: colors.random(),
@@ -159,7 +159,7 @@ class Player extends BodyComponent<Game> {
       final normalAngle = game.dragAngle! - angle;
       canvas.drawLine(
         Offset.zero,
-        Offset.zero + (Offset(cos(normalAngle), sin(normalAngle)) * 10.0),
+        Offset.zero + (Offset(cos(normalAngle), sin(normalAngle)) * 20.0),
         Paint()
           ..color = const Color(0xffb409ba)
           ..strokeWidth = 0.5,
