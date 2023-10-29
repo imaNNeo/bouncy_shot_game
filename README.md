@@ -5,4 +5,4 @@ It contains only **298** lines of Dart code (check the [commit](https://github.c
 
 More details: [My tweet](https://twitter.com/imaN__NeO/status/1718561030211617117), [video link](https://youtu.be/BAe8tsT_Dms)
 
-[<img src="https://github.com/imaNNeo/bouncy_shot_game/raw/master/repo_files/images/shot.jpg" width="80%" alt="Preview Image"/>](https://www.youtube.com/watch?v=BAe8tsT_Dms)
+[<img src="https://github.com/imaNNeo/bouncy_shot_game/raw/main/repo_files/images/shot.jpg" width="80%" alt="Preview Image"/>](https://www.youtube.com/watch?v=BAe8tsT_Dms)
