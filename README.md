@@ -4,3 +4,5 @@ This is a game built by [Flutter](https://flutter.dev/) and [Flame game engine](
 It contains only **298** lines of Dart code (check the [commit](https://github.com/imaNNeo/bouncy_shot_game/commit/7831ab5d8c7f48e2fb3f177f81b63efc4375fbc2)), and it is a playable game
 
 More details: [My tweet](https://twitter.com/imaN__NeO/status/1718561030211617117), [video link](https://youtu.be/BAe8tsT_Dms)
+
+[<img src="https://github.com/imaNNeo/fl_chart/raw/master/repo_files/images/shot.jpg" width="80%" alt="Preview Image"/>](https://www.youtube.com/watch?v=BAe8tsT_Dms)
