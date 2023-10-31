@@ -74,7 +74,11 @@ class Game extends Forge2DGame with DragCallbacks, HasTimeScale, HasDecorator {
         position: rect.topCenter.toVector2() + Vector2(0, 1),
         anchor: Anchor.topLeft,
         textRenderer: TextPaint(
-          style: const TextStyle(fontSize: 6, shadows: [Shadow(blurRadius: 8)]),
+          style: const TextStyle(
+            fontSize: 6,
+            shadows: [Shadow(blurRadius: 8)],
+            color: Colors.white,
+          ),
         ),
       ),
     );
@@ -91,7 +95,11 @@ class Game extends Forge2DGame with DragCallbacks, HasTimeScale, HasDecorator {
     if (remain <= 0 || world.children.length <= 3) {
       topText.position = rect.center.toVector2();
       topText.textRenderer = TextPaint(
-        style: const TextStyle(fontSize: 36, shadows: [Shadow(blurRadius: 40)]),
+        style: const TextStyle(
+          fontSize: 36,
+          shadows: [Shadow(blurRadius: 40)],
+          color: Colors.white,
+        ),
       );
       topText.anchor = Anchor.center;
       decorator = PaintDecorator.grayscale();
