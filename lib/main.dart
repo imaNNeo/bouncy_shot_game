@@ -50,6 +50,7 @@ class Game extends Forge2DGame with DragCallbacks, HasTimeScale, HasDecorator {
   @override
   Future<void> onLoad() async {
     final colors = (await playerColors).toList();
+    FlameAudio.audioCache.loadAll(['explosion.wav']);
     FlameAudio.bgm.initialize();
     FlameAudio.bgm.play('bg.mp3');
     await world.addAll([
