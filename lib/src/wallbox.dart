@@ -1,6 +1,6 @@
 import 'dart:math' hide Rectangle;
 
-import 'package:bouncy_shot_game/my_game.dart';
+import 'package:bouncy_shot_game/src/my_game.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame_forge2d/flame_forge2d.dart' hide Particle, Timer;
 import 'package:flutter/material.dart';

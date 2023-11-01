@@ -1,6 +1,6 @@
 import 'dart:math' hide Rectangle;
-import 'package:bouncy_shot_game/player.dart';
-import 'package:bouncy_shot_game/wallbox.dart';
+import 'package:bouncy_shot_game/src/player.dart';
+import 'package:bouncy_shot_game/src/wallbox.dart';
 import 'package:flame/cache.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';

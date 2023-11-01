@@ -1,7 +1,7 @@
 import 'dart:math' hide Rectangle;
 
-import 'package:bouncy_shot_game/bullet.dart';
-import 'package:bouncy_shot_game/my_game.dart';
+import 'package:bouncy_shot_game/src/bullet.dart';
+import 'package:bouncy_shot_game/src/my_game.dart';
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/extensions.dart';
