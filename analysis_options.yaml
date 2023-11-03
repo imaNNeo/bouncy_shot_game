@@ -2,3 +2,6 @@ include: package:flame_lint/analysis_options.yaml
 
 linter:
   rules:
+    do_not_use_environment:
+      ignore:
+        - lib/build_variables.dart
