@@ -24,6 +24,10 @@ class MyGame extends Forge2DGame
   Vector2? draggingPos;
   late Player currentPlayer;
 
+  final ValueNotifier<DraggingInfo> draggingInfo = ValueNotifier(
+    DraggingInfo(null, null),
+  );
+
   Rect get rect => const Rect.fromLTWH(-50, -50, 100, 100).deflate(4);
 
   Vector2? get _dragLine => draggingPos == null || draggingPos!.isNaN
@@ -109,17 +113,23 @@ class MyGame extends Forge2DGame
   @override
   void onDragStart(DragStartEvent event) {
     draggingPosStart = screenToWorld(event.localPosition);
+    draggingInfo.value = DraggingInfo(event.localPosition.toOffset(), null);
     super.onDragStart(event);
   }
 
   @override
   void onDragUpdate(DragUpdateEvent event) {
     draggingPos = screenToWorld(event.localPosition);
+    draggingInfo.value = DraggingInfo(
+      draggingInfo.value.start,
+      event.localPosition.toOffset(),
+    );
     super.onDragUpdate(event);
   }
 
   @override
   void onDragEnd(DragEndEvent event) {
+    draggingInfo.value = DraggingInfo(null, null);
     if (dragAngle != null && !dragAngle!.isNaN && timeScale == 1.0) {
       currentPlayer.fireBullet(dragAngle!);
     }
@@ -132,4 +142,11 @@ class MyGame extends Forge2DGame
     draggingPos = null;
     super.onDragCancel(event);
   }
+}
+
+class DraggingInfo {
+  final Offset? start;
+  final Offset? end;
+
+  DraggingInfo(this.start, this.end);
 }
